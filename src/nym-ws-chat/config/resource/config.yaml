@@ -1,0 +1,9 @@
+
+Client:
+  name: "Bob"
+  host: "127.0.0.1"
+  port: 1977
+
+Contacts:
+  - address: "8CPBCQ4s2WvRNJXTZ6UHeR1yz8KZry8HyiHs4hrHwK5S.6yUNaMLVBDFexkt8WDcfTU6PxFuttsgshjPaEojQwLnc@77TSuVU8d1oXKbPzjec2xh4i3Wj5WwUyy9Lr36sm8gZm"
+    alias: "Alice"
