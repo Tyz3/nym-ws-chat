@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"nym-ws-chat/message"
 	"os"
+	"time"
 )
 
 type Client struct {
@@ -43,7 +44,6 @@ func (c *Client) GetUrl() string {
 }
 
 func (c *Client) Close() {
-	fmt.Println("Closing websocket...")
 	err := c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		fmt.Println("Error during closing websocket:", err)
@@ -58,7 +58,6 @@ func (c *Client) SendMessage(message message.Message) {
 		fmt.Println(err)
 		return
 	}
-	//fmt.Printf("[%s] %s\n", time.Now().Format(time.ANSIC), string(message.ToJson()))
 }
 
 func (c *Client) ReadSocket(outputChannel chan<- string) {
@@ -75,14 +74,7 @@ func (c *Client) ReadSocket(outputChannel chan<- string) {
 
 func (c *Client) StartPrint(inputChannel <-chan string) {
 	for !c.Closed {
-		<-inputChannel
-		//msg := <-inputChannel
-		//fmt.Printf("[%s] %s\n", time.Now().Format(time.ANSIC), msg)
+		msg := <-inputChannel
+		fmt.Printf("[%s] %s\n", time.Now().Format(time.ANSIC), msg)
 	}
-}
-
-func (c *Client) PrintInputMessages() {
-	channel := make(chan string, 10) // Канал для пересылки сообщений между горутинами
-	go c.ReadSocket(channel)
-	go c.StartPrint(channel)
 }
