@@ -2,89 +2,84 @@ package command
 
 import (
 	"fmt"
+	utils "kronos-utils"
 	"nym-ws-chat/client"
 	"nym-ws-chat/config"
-	"nym-ws-chat/message"
-	"strings"
-	"time"
 )
 
-func Help(exe string) {
-	exe = strings.Replace(exe, "./", "  ", 1)
-	msg := `Commands:
-{exe} send <номер_контакта> <сообщение>
-{exe} test <номер_контакта> <размер_сообщения> <количество_сообщений>
-{exe} addcontact <имя> <адрес>
-{exe} delcontact <номер_контакта>
-{exe} list
-{exe} addr
-{exe} read`
-
-	fmt.Println(strings.ReplaceAll(msg, "{exe}", exe))
+type command struct {
+	Name         string
+	ArgsRequired int
+	done         bool
+	client       *client.Client
 }
 
-func Addr(client *client.Client) {
-	msg := message.NewSelfAddressMessage()
-	client.SendMessage(msg)
+type Command interface {
+	ValidArgsLength(args []string) bool
+	Execute(config *config.Config, args []string)
+	GetName() string
+	GetParams() string
+	GetDescription() string
+	IsDone() bool
+	StopExecution()
+	GetRequiredArgsLength() int
 }
 
-func List(contacts []config.Contact) {
-	var sb strings.Builder
-	sb.WriteString("Список контактов:\n")
-	for i, contact := range contacts {
-		sb.WriteString(fmt.Sprintf("#%d %-8s %s\n", i, contact.Alias, contact.Address))
+var (
+	HELP       Command = NewHelpCmd("help", 2)
+	ADDCONTACT Command = NewAddContactCmd("addcontact", 4)
+	DELCONTACT Command = NewDelContactCmd("delcontact", 3)
+	SEND       Command = NewSendCmd("send", 4)
+	LISTEN     Command = NewListenCmd("listen", 2)
+	LIST       Command = NewListCmd("list", 2)
+	ADDR       Command = NewAddrCmd("addr", 2)
+	BENCHMARK  Command = NewBenchmarkCmd("benchmark", 5)
+
+	Values = []Command{HELP, ADDCONTACT, DELCONTACT, SEND, LISTEN, LIST, ADDR, BENCHMARK}
+)
+
+// ValidArgsLength Абстрактный метод
+func (c *command) ValidArgsLength(args []string) bool {
+	return c.ArgsRequired <= len(args)
+}
+
+// GetName Абстрактный метод
+func (c *command) GetName() string {
+	return c.Name
+}
+
+// IsDone Абстрактный метод
+func (c *command) IsDone() bool {
+	return c.done
+}
+
+// StopExecution Абстрактный метод
+func (c *command) StopExecution() {
+	if c.client != nil && !c.client.Closed {
+		c.client.Close()
 	}
-	fmt.Println(sb.String())
 }
 
-func AddContact(cfg *config.Config, alias string, address string) {
-	cfg.Contacts = append(cfg.Contacts, config.Contact{Address: address, Alias: alias})
-	cfg.Save()
+// GetHelp Статичный метод
+func GetHelp(cmd Command) string {
+	return fmt.Sprintf(
+		"%s%-12s%s %-32s %s",
+		utils.GREEN, cmd.GetName(), utils.RESET,
+		cmd.GetParams(),
+		cmd.GetDescription(),
+	)
 }
 
-func DelContact(cfg *config.Config, contactNum int) {
-	cfg.Contacts = append(cfg.Contacts[:contactNum], cfg.Contacts[contactNum+1:]...)
-	cfg.Save()
+// GetRequiredArgsLength Абстрактный метод
+func (c *command) GetRequiredArgsLength() int {
+	return c.ArgsRequired
 }
 
-func Send(cfg *config.Config, client *client.Client, contactNum int, text string) {
-	// Выбор контакта из списка
-	if contactNum >= len(cfg.Contacts) {
-		fmt.Println("Не найден контакт под номером", contactNum)
-		return
+func GetCommandByName(cmdName string) Command {
+	for _, v := range Values {
+		if cmdName == v.GetName() {
+			return v
+		}
 	}
-	contact := cfg.Contacts[contactNum]
-
-	// Обправка сообщения
-	msg := message.NewOneWayMessage(text, contact.Address, false)
-	client.SendMessage(msg)
-}
-
-func Test(cfg *config.Config, client *client.Client, contactNum int, payloadLength int, benchCount int) {
-	ReadMessages(client)
-	// Выбор контакта из списка
-	if contactNum >= len(cfg.Contacts) {
-		fmt.Println("Не найден контакт под номером", contactNum)
-		return
-	}
-	contact := cfg.Contacts[contactNum]
-
-	text := strings.Repeat("a", payloadLength)
-
-	// Обправка сообщения
-	msg := message.NewOneWayMessage(text, contact.Address, true)
-	start := time.Now()
-	client.Benchmark.N = benchCount
-	for i := 0; i < benchCount; i++ {
-		client.SendMessage(msg)
-	}
-	for client.Benchmark.N > 0 {
-	}
-	fmt.Println("Time elapsed:", time.Since(start))
-}
-
-func ReadMessages(client *client.Client) {
-	channel := make(chan string, 10) // Канал для пересылки сообщений между горутинами
-	go client.ReadSocket(channel)
-	go client.StartPrint(channel)
+	return nil
 }
