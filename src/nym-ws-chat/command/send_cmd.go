@@ -2,9 +2,10 @@ package command
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	. "nym-ws-chat/client"
+	"nym-ws-chat/client/request"
 	"nym-ws-chat/config"
-	"nym-ws-chat/message"
 	"strconv"
 	"strings"
 )
@@ -39,12 +40,18 @@ func (cmd *SendCmd) Execute(config *config.Config, args []string) {
 	contact := config.Contacts[contactNum]
 	text := strings.Join(args[3:], " ")
 
-	// Оnправка сообщения
-	msg := message.NewOneWayMessage(text, contact.Address, false)
-	client.SendMessage(msg)
+	// Включаем чтение сокета
+	//go client.ReadSocket()
+
+	// Отправка сообщения
+	writer, err := client.Conn.NextWriter(websocket.BinaryMessage)
+	if err != nil {
+		panic(err)
+	}
+	request.NewSendRequest(true, contact.Address).SetMessage(text).Send(writer)
+	writer.Close()
 
 	client.Close()
-
 	cmd.command.done = true
 }
 

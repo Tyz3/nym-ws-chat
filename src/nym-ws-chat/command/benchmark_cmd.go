@@ -2,9 +2,10 @@ package command
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	. "nym-ws-chat/client"
+	"nym-ws-chat/client/request"
 	"nym-ws-chat/config"
-	"nym-ws-chat/message"
 	"strconv"
 	"strings"
 	"time"
@@ -53,12 +54,11 @@ func (cmd *BenchmarkCmd) Execute(config *config.Config, args []string) {
 	text := strings.Repeat("a", payloadLength)
 
 	// Включаем чтение сообщений из сокета
-	channel := make(chan string, 10) // Канал для пересылки сообщений между горутинами
-	go client.ReadSocket(channel)
-	go client.StartPrint(channel)
+	go client.ReadSocket()
 
 	// Отправка сообщения
-	msg := message.NewOneWayMessage(text, contact.Address, true)
+	msg := request.NewSendRequest(true, contact.Address)
+	msg.SetMessage(text)
 
 	// Начинаем отсчёт времени
 	start := time.Now()
@@ -66,7 +66,12 @@ func (cmd *BenchmarkCmd) Execute(config *config.Config, args []string) {
 	// Задаём кол-во отправляемых сообщений
 	client.Benchmark.N = benchCount
 	for i := 0; i < benchCount; i++ {
-		client.SendMessage(msg)
+		writer, err := client.Conn.NextWriter(websocket.BinaryMessage)
+		if err != nil {
+			panic(err)
+		}
+		msg.Send(writer)
+		writer.Close()
 	}
 
 	// Ожидаем получения всех отправленных сообщений

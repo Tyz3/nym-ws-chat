@@ -3,18 +3,17 @@ package client
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"nym-ws-chat/message"
+	"nym-ws-chat/client/response"
 	"os"
-	"time"
+	"strings"
 )
 
 type Client struct {
-	Host string
-	Port int
-	Conn *websocket.Conn
+	host string
+	port int
 
-	Closed bool
-
+	Conn      *websocket.Conn
+	Closed    bool
 	Benchmark struct {
 		N int
 	}
@@ -22,8 +21,8 @@ type Client struct {
 
 func NewClient(host string, port int) *Client {
 	client := &Client{
-		Host: host,
-		Port: port,
+		host: host,
+		port: port,
 	}
 
 	conn, resp, err := websocket.DefaultDialer.Dial(client.GetUrl(), nil)
@@ -40,7 +39,7 @@ func NewClient(host string, port int) *Client {
 }
 
 func (c *Client) GetUrl() string {
-	return fmt.Sprintf("ws://%s:%d", c.Host, c.Port)
+	return fmt.Sprintf("ws://%s:%d", c.host, c.port)
 }
 
 func (c *Client) Close() {
@@ -52,29 +51,68 @@ func (c *Client) Close() {
 	c.Closed = true
 }
 
-func (c *Client) SendMessage(message message.Message) {
-	err := c.Conn.WriteMessage(websocket.TextMessage, message.ToJson())
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-}
+//func (c *Client) SendMessage(message message.Message) {
+//	err := c.Conn.WriteMessage(websocket.TextMessage, message.ToJson())
+//	if err != nil {
+//		fmt.Println(err)
+//		return
+//	}
+//}
 
-func (c *Client) ReadSocket(outputChannel chan<- string) {
+//func (c *Client) ReadSocket(outputChannel chan<- string) {
+//	for !c.Closed {
+//		_, data, err := c.Conn.ReadMessage()
+//		c.Benchmark.N--
+//		if err != nil {
+//			fmt.Println(err)
+//		} else {
+//			outputChannel <- string(data)
+//		}
+//	}
+//}
+
+func (c *Client) ReadSocket() {
 	for !c.Closed {
-		_, data, err := c.Conn.ReadMessage()
+		messageType, reader, err := c.Conn.NextReader()
 		c.Benchmark.N--
 		if err != nil {
 			fmt.Println(err)
-		} else {
-			outputChannel <- string(data)
+		}
+
+		if messageType == -1 {
+			return
+		}
+
+		var sb strings.Builder
+		sb.WriteString("Received message type: ")
+		if messageType == websocket.BinaryMessage {
+			sb.WriteString("BinaryMessage")
+		} else if messageType == websocket.TextMessage {
+			sb.WriteString("TextMessage")
+		}
+		sb.WriteString(fmt.Sprintf("(%d)", messageType))
+		fmt.Println(sb.String())
+
+		if messageType == websocket.BinaryMessage {
+			resp, tag := response.CreateResponse(reader)
+			if resp == nil {
+				fmt.Println("Тип сообщения", tag, "не распознан")
+				continue
+			}
+
+			resp.Parse()
+			fmt.Println(resp.ToString())
+
+		} else if messageType == websocket.TextMessage {
+
 		}
 	}
 }
 
-func (c *Client) StartPrint(inputChannel <-chan string) {
-	for !c.Closed {
-		msg := <-inputChannel
-		fmt.Printf("[%s] %s\n", time.Now().Format(time.ANSIC), msg)
-	}
-}
+//func (c *Client) StartPrint(inputChannel <-chan string) {
+//	for !c.Closed {
+//		msg := <-inputChannel
+//
+//		fmt.Printf("[%s] %s\n", time.Now().Format(time.ANSIC), msg)
+//	}
+//}

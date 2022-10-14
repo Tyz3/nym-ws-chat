@@ -21,9 +21,7 @@ func NewListenCmd(name string, argsRequired int) *ListenCmd {
 func (cmd *ListenCmd) Execute(config *config.Config, args []string) {
 	client := NewClient(config.Client.Host, config.Client.Port)
 
-	channel := make(chan string, 10) // Канал для пересылки сообщений между горутинами
-	go client.ReadSocket(channel)
-	go client.StartPrint(channel)
+	go client.ReadSocket()
 }
 
 func (cmd *ListenCmd) GetParams() string {

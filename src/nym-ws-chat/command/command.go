@@ -30,12 +30,15 @@ var (
 	ADDCONTACT Command = NewAddContactCmd("addcontact", 4)
 	DELCONTACT Command = NewDelContactCmd("delcontact", 3)
 	SEND       Command = NewSendCmd("send", 4)
+	SENDF      Command = NewSendFCmd("sendf", 4)
 	LISTEN     Command = NewListenCmd("listen", 2)
 	LIST       Command = NewListCmd("list", 2)
 	ADDR       Command = NewAddrCmd("addr", 2)
 	BENCHMARK  Command = NewBenchmarkCmd("benchmark", 5)
+	REPLY      Command = NewReplyCmd("reply", 4)
+	REPLYF     Command = NewReplyFCmd("replyf", 4)
 
-	Values = []Command{HELP, ADDCONTACT, DELCONTACT, SEND, LISTEN, LIST, ADDR, BENCHMARK}
+	Values = []Command{HELP, ADDCONTACT, DELCONTACT, SEND, SENDF, LISTEN, LIST, ADDR, BENCHMARK, REPLY, REPLYF}
 )
 
 // ValidArgsLength Абстрактный метод
