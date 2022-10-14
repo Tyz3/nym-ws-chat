@@ -6,11 +6,6 @@ import (
 	"strings"
 )
 
-var (
-	MesgByte = []byte{0x01}
-	FileByte = []byte{0x02}
-)
-
 type request struct {
 	tag byte
 }

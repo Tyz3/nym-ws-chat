@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"nym-ws-chat/client/response"
+	. "nym-ws-chat/client/web_socket_packet"
 	"os"
-	"strings"
 )
 
 type Client struct {
@@ -51,68 +51,53 @@ func (c *Client) Close() {
 	c.Closed = true
 }
 
-//func (c *Client) SendMessage(message message.Message) {
-//	err := c.Conn.WriteMessage(websocket.TextMessage, message.ToJson())
-//	if err != nil {
-//		fmt.Println(err)
-//		return
-//	}
-//}
-
-//func (c *Client) ReadSocket(outputChannel chan<- string) {
-//	for !c.Closed {
-//		_, data, err := c.Conn.ReadMessage()
-//		c.Benchmark.N--
-//		if err != nil {
-//			fmt.Println(err)
-//		} else {
-//			outputChannel <- string(data)
-//		}
-//	}
-//}
-
 func (c *Client) ReadSocket() {
 	for !c.Closed {
 		messageType, reader, err := c.Conn.NextReader()
 		c.Benchmark.N--
 		if err != nil {
 			fmt.Println(err)
+			continue
 		}
 
 		if messageType == -1 {
+			fmt.Println("WebSocket closed externaly")
 			return
 		}
 
-		var sb strings.Builder
-		sb.WriteString("Received message type: ")
-		if messageType == websocket.BinaryMessage {
-			sb.WriteString("BinaryMessage")
-		} else if messageType == websocket.TextMessage {
-			sb.WriteString("TextMessage")
+		// Создаём пакет из соединения
+		packet := NewWSPacketReader(messageType, reader)
+		if packet == nil {
+			fmt.Println("WSPacketReader is nil")
+			continue
 		}
-		sb.WriteString(fmt.Sprintf("(%d)", messageType))
-		fmt.Println(sb.String())
 
-		if messageType == websocket.BinaryMessage {
-			resp, tag := response.CreateResponse(reader)
+		// Печать пакета
+		fmt.Println(packet.String())
+
+		// Проверка нужного типа сообщения (TextMessage или BinaryMessage)
+		if !packet.IsValid() {
+			fmt.Println("Принятый тип сообщения не поддерживается, сообщение отброшено")
+			continue
+		}
+
+		// Чтение пакета по типу
+		switch packet.Type {
+		case websocket.BinaryMessage:
+			// Читаем первый байт пакета (сигнатура сообщения)
+			sig := packet.ReadByte()
+
+			resp := response.CreateResponse(sig, packet)
 			if resp == nil {
-				fmt.Println("Тип сообщения", tag, "не распознан")
+				fmt.Printf("Тип сообщения 0x%02x не распознан\n", sig)
 				continue
 			}
 
 			resp.Parse()
-			fmt.Println(resp.ToString())
+			fmt.Println(resp.String())
 
-		} else if messageType == websocket.TextMessage {
-
+		case websocket.TextMessage:
+			fmt.Println("Поддержка TextMessage не реализована")
 		}
 	}
 }
-
-//func (c *Client) StartPrint(inputChannel <-chan string) {
-//	for !c.Closed {
-//		msg := <-inputChannel
-//
-//		fmt.Printf("[%s] %s\n", time.Now().Format(time.ANSIC), msg)
-//	}
-//}

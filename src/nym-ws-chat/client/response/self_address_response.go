@@ -2,39 +2,30 @@ package response
 
 import (
 	"fmt"
-	"io"
 	"nym-ws-chat/client/request"
-	"strings"
+	"nym-ws-chat/client/web_socket_packet"
 )
 
 type SelfAddressResponse struct {
 	response
 
-	Address string
+	Address []byte
 }
 
-func NewSelfAddressResponse(reader io.Reader) *SelfAddressResponse {
+func NewSelfAddressResponse(wsPacketReader *web_socket_packet.WSPacketReader) *SelfAddressResponse {
 	return &SelfAddressResponse{
 		response: response{
-			tag:    SelfAddressResponseType,
-			reader: reader,
+			Tag:            SelfAddressResponseType,
+			WSPacketReader: wsPacketReader,
 		},
 	}
 }
 
 func (r *SelfAddressResponse) Parse() {
 	// Читаем surb-байт
-	address := make([]byte, 96)
-	_, _ = r.reader.Read(address)
-	r.Address = request.NymAddressFromBytes(address)
+	r.Address = r.WSPacketReader.ReadN(96)
 }
 
-func (r *SelfAddressResponse) ToString() string {
-	var sb strings.Builder
-	sb.WriteString("Tag: ")
-	sb.WriteString(fmt.Sprintf("0x%02x", r.tag))
-	sb.WriteString("\n")
-	sb.WriteString("Address: ")
-	sb.WriteString(r.Address)
-	return sb.String()
+func (r *SelfAddressResponse) String() string {
+	return fmt.Sprintf("Address: %s", request.NymAddressFromBytes(r.Address))
 }

@@ -1,16 +1,16 @@
 package response
 
 import (
-	"io"
+	"nym-ws-chat/client/web_socket_packet"
 )
 
 type response struct {
-	tag    byte
-	reader io.Reader
+	Tag            byte
+	WSPacketReader *web_socket_packet.WSPacketReader
 }
 
 type Response interface {
-	ToString() string
+	String() string
 	Parse()
 }
 
@@ -20,21 +20,15 @@ const (
 	SelfAddressResponseType = 0x02
 )
 
-func CreateResponse(reader io.Reader) (Response, byte) {
-	tag := make([]byte, 1)
-	_, err := reader.Read(tag)
-	if err != nil {
-		return nil, tag[0]
-	}
-
-	switch tag[0] {
+func CreateResponse(sig byte, wsPacketReader *web_socket_packet.WSPacketReader) Response {
+	switch sig {
 	case ErrorResponseType:
-		return NewErrorResponse(reader), tag[0]
+		return NewErrorResponse(wsPacketReader)
 	case ReceiveResponseType:
-		return NewReceiveResponse(reader), tag[0]
+		return NewReceiveResponse(wsPacketReader)
 	case SelfAddressResponseType:
-		return NewSelfAddressResponse(reader), tag[0]
+		return NewSelfAddressResponse(wsPacketReader)
 	default:
-		return nil, tag[0]
+		return nil
 	}
 }

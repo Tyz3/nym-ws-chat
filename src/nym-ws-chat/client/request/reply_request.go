@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"io"
+	"nym-ws-chat/client/chat_payload"
 	"os"
 )
 
@@ -59,7 +60,7 @@ func (m *ReplyRequest) Send(writer io.WriteCloser) {
 
 	if m.file != nil {
 		// Сигнатура файла
-		_, _ = writer.Write(FileByte)
+		_, _ = writer.Write([]byte{chat_payload.FilePayloadType})
 
 		// Имя файла
 		fileName := m.file.Name()
@@ -77,7 +78,7 @@ func (m *ReplyRequest) Send(writer io.WriteCloser) {
 		}
 	} else {
 		// Сигнатура текста
-		_, _ = writer.Write(MesgByte)
+		_, _ = writer.Write([]byte{chat_payload.MessagePayloadType})
 		written, err := writer.Write([]byte(m.message))
 		fmt.Println("Message Written:", written)
 		if err != nil {

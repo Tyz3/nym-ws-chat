@@ -49,7 +49,7 @@ func (cmd *SendFCmd) Execute(config *config.Config, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	request.NewSendRequest(true, contact.Address).SetFile(fileInfo).Send(writer)
+	request.NewSendRequest(true, contact.Address).SetFile(fileInfo, args[3]).Send(writer)
 	writer.Close()
 
 	client.Close()

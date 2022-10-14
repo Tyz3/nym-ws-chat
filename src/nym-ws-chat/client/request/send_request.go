@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"nym-ws-chat/client/chat_payload"
 	"os"
 )
 
@@ -15,6 +16,7 @@ type SendRequest struct {
 
 	message       string
 	file          *os.File
+	fileInfo      os.FileInfo
 	payloadLength []byte
 }
 
@@ -27,7 +29,7 @@ func NewSendRequest(surb bool, address string) *SendRequest {
 		payloadLength: make([]byte, 8),
 	}
 
-	fmt.Println("Адрес для отправки сообщения:\n", r.address[:], "\n", NymAddressFromBytes(r.address[:]))
+	fmt.Println("Адрес для отправки сообщения:\n", NymAddressFromBytes(r.address[:]))
 
 	if surb {
 		r.surb = 0x01
@@ -38,13 +40,15 @@ func NewSendRequest(surb bool, address string) *SendRequest {
 	return r
 }
 
-func (m *SendRequest) SetFile(fileInfo os.FileInfo) *SendRequest {
-	file, err := os.Open(fileInfo.Name())
+func (m *SendRequest) SetFile(fileInfo os.FileInfo, path string) *SendRequest {
+	file, err := os.Open(path)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "Ошибка открытия файла: %s (Size:%d, Mode:%s, IsDir:%+v)\n", path, fileInfo.Size(), fileInfo.Mode().String(), fileInfo.IsDir())
 		panic(err)
 	}
 
 	m.file = file
+	m.fileInfo = fileInfo
 	binary.BigEndian.PutUint64(m.payloadLength, uint64(fileInfo.Size()+8+1+int64(len(fileInfo.Name()))))
 	return m
 }
@@ -56,20 +60,20 @@ func (m *SendRequest) SetMessage(text string) *SendRequest {
 }
 
 func (m *SendRequest) Send(writer io.WriteCloser) {
-	_, _ = writer.Write([]byte{m.tag, m.surb})
-	_, _ = writer.Write(m.address[:])
-	_, _ = writer.Write(m.payloadLength)
+	writer.Write([]byte{m.tag, m.surb})
+	writer.Write(m.address[:])
+	writer.Write(m.payloadLength)
 
 	if m.file != nil {
 		// Сигнатура файла
-		_, _ = writer.Write(FileByte)
+		writer.Write([]byte{chat_payload.FilePayloadType})
 
 		// Имя файла
-		fileName := m.file.Name()
+		fileName := m.fileInfo.Name()
 		fileNameLength := make([]byte, 8)
 		binary.BigEndian.PutUint64(fileNameLength, uint64(len(fileName)))
-		_, _ = writer.Write(fileNameLength)
-		_, _ = writer.Write([]byte(fileName))
+		writer.Write(fileNameLength)
+		writer.Write([]byte(fileName))
 
 		// Содержимое файла
 		written, err := io.Copy(writer, m.file)
@@ -80,7 +84,7 @@ func (m *SendRequest) Send(writer io.WriteCloser) {
 		}
 	} else {
 		// Сигнатура текста
-		_, _ = writer.Write(MesgByte)
+		writer.Write([]byte{chat_payload.MessagePayloadType})
 		written, err := writer.Write([]byte(m.message))
 		fmt.Println("Message Written:", written)
 		if err != nil {
