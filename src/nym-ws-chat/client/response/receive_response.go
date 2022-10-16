@@ -3,8 +3,8 @@ package response
 import (
 	"fmt"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"nym-ws-chat/client/chat_payload"
-	"nym-ws-chat/client/web_socket_packet"
+	. "nym-ws-chat/client/chat_payload"
+	. "nym-ws-chat/client/web_socket_packet"
 	"os"
 	"strings"
 )
@@ -17,14 +17,14 @@ type ReceiveResponse struct {
 	Surb       []byte
 
 	payloadLength uint64
-	Payload       chat_payload.Payload
+	Payload       PayloadReader
 }
 
-func NewReceiveResponse(wsPacketReader *web_socket_packet.WSPacketReader) *ReceiveResponse {
+func NewReceiveResponse(reader *WSPacketReader) *ReceiveResponse {
 	return &ReceiveResponse{
 		response: response{
 			Tag:            ReceiveResponseType,
-			WSPacketReader: wsPacketReader,
+			WSPacketReader: reader,
 		},
 	}
 }
@@ -58,14 +58,17 @@ func (r *ReceiveResponse) Parse() {
 	// File
 	// |   sig   | file-name-length(N) | file-name | file-content |
 	// |  1 байт |         8 байт      |   N байт  | M-1-8-N байт |
-	r.Payload = chat_payload.CreatePayload(payloadSig, r.payloadLength, r.WSPacketReader)
-
-	if r.Payload == nil {
+	switch payloadSig {
+	case MessagePayloadType:
+		r.Payload = NewMessagePayloadR(r.payloadLength)
+	case FilePayloadType:
+		r.Payload = NewFilePayloadR(r.payloadLength)
+	default:
 		fmt.Fprintf(os.Stderr, "Тип (0x%0x) полезной нагрузки не распознан", payloadSig)
 		return
 	}
 
-	r.Payload.Process()
+	r.Payload.ReadFrom(r.WSPacketReader)
 }
 
 func (r *ReceiveResponse) String() string {

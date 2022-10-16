@@ -1,21 +1,22 @@
 package request
 
 import (
-	"io"
+	. "nym-ws-chat/client/web_socket_packet"
 )
 
 type SelfAddressRequest struct {
 	request
 }
 
-func NewSelfAddressRequest() *SelfAddressRequest {
+func NewSelfAddressRequest(writer *WSPacketWriter) *SelfAddressRequest {
 	return &SelfAddressRequest{
 		request{
-			tag: 0x02,
+			Tag:            SelfAddressRequestType,
+			WSPacketWriter: writer,
 		},
 	}
 }
 
-func (m *SelfAddressRequest) Send(writer io.WriteCloser) {
-	_, _ = writer.Write([]byte{m.tag})
+func (m *SelfAddressRequest) Send() {
+	m.WSPacketWriter.WriteByte(m.Tag)
 }

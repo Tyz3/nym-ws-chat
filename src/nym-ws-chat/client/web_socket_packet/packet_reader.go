@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io"
+	"nym-ws-chat/client/nym_util"
 	"os"
 	"strconv"
 	"strings"
@@ -65,6 +66,12 @@ func (p *WSPacketReader) ReadString(length uint64) string {
 	return string(buf)
 }
 
+func (p *WSPacketReader) ReadNymAddress() string {
+	buf := make([]byte, 96)
+	p.Read(buf)
+	return nym_util.NymAddressFromBytes(buf)
+}
+
 func (p *WSPacketReader) Reader() io.Reader {
 	return p.reader
 }
@@ -82,7 +89,7 @@ func (p *WSPacketReader) String() string {
 	case websocket.TextMessage:
 		sb.WriteString(" (TextMessage)")
 	case websocket.BinaryMessage:
-		sb.WriteString(" (TextMessage)")
+		sb.WriteString(" (BinaryMessage)")
 	}
 
 	return sb.String()

@@ -1,88 +1,54 @@
 package request
 
 import (
-	"encoding/binary"
-	"fmt"
 	"github.com/btcsuite/btcd/btcutil/base58"
-	"io"
-	"nym-ws-chat/client/chat_payload"
-	"os"
+	. "nym-ws-chat/client/chat_payload"
+	. "nym-ws-chat/client/web_socket_packet"
 )
 
 type ReplyRequest struct {
 	request
 
-	surbLength []byte
-	surb       []byte
+	Surb string
 
-	payloadLength []byte
-	message       string
-	file          *os.File
+	text string
+	path string
 }
 
-func NewReplyRequest(surb string) *ReplyRequest {
-	r := &ReplyRequest{
+func NewReplyRequest(writer *WSPacketWriter, surb string) *ReplyRequest {
+	return &ReplyRequest{
 		request: request{
-			tag: 0x01,
+			Tag:            ReplyRequestType,
+			WSPacketWriter: writer,
 		},
-		payloadLength: make([]byte, 8),
-		surbLength:    make([]byte, 8),
-		surb:          base58.Decode(surb),
+		Surb: surb,
 	}
-
-	binary.BigEndian.PutUint64(r.surbLength, uint64(len(r.surb)))
-
-	return r
 }
 
-func (m *ReplyRequest) SetFile(fileInfo os.FileInfo) *ReplyRequest {
-	file, err := os.Open(fileInfo.Name())
-	if err != nil {
-		panic(err)
-	}
-
-	m.file = file
-	binary.BigEndian.PutUint64(m.payloadLength, uint64(fileInfo.Size()+8+1+int64(len(fileInfo.Name()))))
+func (m *ReplyRequest) SetFile(path string) *ReplyRequest {
+	m.path = path
 	return m
 }
 
 func (m *ReplyRequest) SetMessage(text string) *ReplyRequest {
-	m.message = text
-	binary.BigEndian.PutUint64(m.payloadLength, uint64(len(text)+1))
+	m.text = text
 	return m
 }
 
-func (m *ReplyRequest) Send(writer io.WriteCloser) {
-	_, _ = writer.Write([]byte{m.tag})
-	_, _ = writer.Write(m.surbLength)
-	_, _ = writer.Write(m.surb)
-	_, _ = writer.Write(m.payloadLength)
+func (m *ReplyRequest) Send() {
+	m.WSPacketWriter.WriteByte(m.Tag) // 1 байт
 
-	if m.file != nil {
-		// Сигнатура файла
-		_, _ = writer.Write([]byte{chat_payload.FilePayloadType})
+	surbBytes := base58.Decode(m.Surb)
+	m.WSPacketWriter.WriteUint64(uint64(len(surbBytes))) // 8 байт
+	m.WSPacketWriter.Write(surbBytes)                    // L байт
 
-		// Имя файла
-		fileName := m.file.Name()
-		fileNameLength := make([]byte, 8)
-		binary.BigEndian.PutUint64(fileNameLength, uint64(len(fileName)))
-		_, _ = writer.Write(fileNameLength)
-		_, _ = writer.Write([]byte(fileName))
-
-		// Содержимое файла
-		written, err := io.Copy(writer, m.file)
-		m.file.Close()
-		fmt.Println("File Written:", written)
-		if err != nil {
-			panic(err)
-		}
+	if m.path != "" {
+		var payload PayloadWriter = NewFilePayloadW(m.path)
+		m.WSPacketWriter.WriteUint64(payload.Length()) // 8 байт
+		payload.WriteTo(m.WSPacketWriter)              // M байт
 	} else {
-		// Сигнатура текста
-		_, _ = writer.Write([]byte{chat_payload.MessagePayloadType})
-		written, err := writer.Write([]byte(m.message))
-		fmt.Println("Message Written:", written)
-		if err != nil {
-			panic(err)
-		}
+		var payload PayloadWriter = NewMessagePayloadW(m.text)
+		m.WSPacketWriter.WriteUint64(payload.Length()) // 8 байт
+		payload.WriteTo(m.WSPacketWriter)              // M байт
 	}
 }

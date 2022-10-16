@@ -3,7 +3,7 @@ package response
 import (
 	"fmt"
 	"io"
-	"nym-ws-chat/client/web_socket_packet"
+	. "nym-ws-chat/client/web_socket_packet"
 	"os"
 )
 
@@ -13,17 +13,19 @@ type ErrorResponse struct {
 	payloadLength uint64
 }
 
-func NewErrorResponse(wsPacketReader *web_socket_packet.WSPacketReader) *ErrorResponse {
+func NewErrorResponse(reader *WSPacketReader) *ErrorResponse {
 	return &ErrorResponse{
 		response: response{
 			Tag:            ErrorResponseType,
-			WSPacketReader: wsPacketReader,
+			WSPacketReader: reader,
 		},
 	}
 }
 
 func (r *ErrorResponse) Parse() {
 	file, _ := os.OpenFile("error", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0666)
+
+	r.WSPacketReader.ReadN(9)
 
 	io.Copy(file, r.WSPacketReader.Reader())
 	file.Close()

@@ -11,8 +11,8 @@ import (
 type Client struct {
 	host string
 	port int
+	conn *websocket.Conn
 
-	Conn      *websocket.Conn
 	Closed    bool
 	Benchmark struct {
 		N int
@@ -33,7 +33,7 @@ func NewClient(host string, port int) *Client {
 		fmt.Printf("%s -> connection established (%d)\n", client.GetUrl(), resp.StatusCode)
 	}
 
-	client.Conn = conn
+	client.conn = conn
 
 	return client
 }
@@ -43,7 +43,7 @@ func (c *Client) GetUrl() string {
 }
 
 func (c *Client) Close() {
-	err := c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	err := c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		fmt.Println("Error during closing websocket:", err)
 		os.Exit(1)
@@ -51,9 +51,17 @@ func (c *Client) Close() {
 	c.Closed = true
 }
 
-func (c *Client) ReadSocket() {
+func (c *Client) GetBinaryWriter() *WSPacketWriter {
+	writer, err := c.conn.NextWriter(websocket.BinaryMessage)
+	if err != nil {
+		panic(err)
+	}
+	return NewWSPacketWriter(websocket.BinaryMessage, writer)
+}
+
+func (c *Client) ReadSocketLoop() {
 	for !c.Closed {
-		messageType, reader, err := c.Conn.NextReader()
+		messageType, reader, err := c.conn.NextReader()
 		c.Benchmark.N--
 		if err != nil {
 			fmt.Println(err)
@@ -95,7 +103,6 @@ func (c *Client) ReadSocket() {
 
 			resp.Parse()
 			fmt.Println(resp.String())
-
 		case websocket.TextMessage:
 			fmt.Println("Поддержка TextMessage не реализована")
 		}

@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	. "nym-ws-chat/client"
 	"nym-ws-chat/client/request"
 	"nym-ws-chat/config"
@@ -54,11 +53,7 @@ func (cmd *BenchmarkCmd) Execute(config *config.Config, args []string) {
 	text := strings.Repeat("a", payloadLength)
 
 	// Включаем чтение сообщений из сокета
-	go client.ReadSocket()
-
-	// Отправка сообщения
-	msg := request.NewSendRequest(true, contact.Address)
-	msg.SetMessage(text)
+	go client.ReadSocketLoop()
 
 	// Начинаем отсчёт времени
 	start := time.Now()
@@ -66,11 +61,8 @@ func (cmd *BenchmarkCmd) Execute(config *config.Config, args []string) {
 	// Задаём кол-во отправляемых сообщений
 	client.Benchmark.N = benchCount
 	for i := 0; i < benchCount; i++ {
-		writer, err := client.Conn.NextWriter(websocket.BinaryMessage)
-		if err != nil {
-			panic(err)
-		}
-		msg.Send(writer)
+		writer := client.GetBinaryWriter()
+		request.NewSendRequest(writer, true, contact.Address).SetMessage(text).Send()
 		writer.Close()
 	}
 

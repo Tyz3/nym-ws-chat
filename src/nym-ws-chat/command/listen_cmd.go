@@ -21,7 +21,7 @@ func NewListenCmd(name string, argsRequired int) *ListenCmd {
 func (cmd *ListenCmd) Execute(config *config.Config, args []string) {
 	client := NewClient(config.Client.Host, config.Client.Port)
 
-	go client.ReadSocket()
+	go client.ReadSocketLoop()
 }
 
 func (cmd *ListenCmd) GetParams() string {

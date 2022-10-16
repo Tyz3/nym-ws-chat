@@ -1,7 +1,6 @@
 package command
 
 import (
-	"github.com/gorilla/websocket"
 	. "nym-ws-chat/client"
 	"nym-ws-chat/client/request"
 	"nym-ws-chat/config"
@@ -29,18 +28,15 @@ func (cmd *ReplyCmd) Execute(config *config.Config, args []string) {
 	text := strings.Join(args[3:], " ")
 
 	// Включаем чтение сокета
-	go client.ReadSocket()
+	go client.ReadSocketLoop()
 
 	// Отправка сообщения
-	writer, err := client.Conn.NextWriter(websocket.BinaryMessage)
-	if err != nil {
-		panic(err)
-	}
-	request.NewReplyRequest(surbBase58).SetMessage(text).Send(writer)
+	writer := client.GetBinaryWriter()
+	request.NewReplyRequest(writer, surbBase58).SetMessage(text).Send()
 	writer.Close()
 
-	client.Close()
-	cmd.command.done = true
+	//client.Close()
+	//cmd.command.done = true
 }
 
 func (cmd *ReplyCmd) GetParams() string {

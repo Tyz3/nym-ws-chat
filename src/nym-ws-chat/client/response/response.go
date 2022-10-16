@@ -1,12 +1,12 @@
 package response
 
 import (
-	"nym-ws-chat/client/web_socket_packet"
+	. "nym-ws-chat/client/web_socket_packet"
 )
 
 type response struct {
 	Tag            byte
-	WSPacketReader *web_socket_packet.WSPacketReader
+	WSPacketReader *WSPacketReader
 }
 
 type Response interface {
@@ -20,7 +20,7 @@ const (
 	SelfAddressResponseType = 0x02
 )
 
-func CreateResponse(sig byte, wsPacketReader *web_socket_packet.WSPacketReader) Response {
+func CreateResponse(sig byte, wsPacketReader *WSPacketReader) Response {
 	switch sig {
 	case ErrorResponseType:
 		return NewErrorResponse(wsPacketReader)

@@ -1,7 +1,6 @@
 package command
 
 import (
-	"github.com/gorilla/websocket"
 	. "nym-ws-chat/client"
 	"nym-ws-chat/client/request"
 	"nym-ws-chat/config"
@@ -23,14 +22,10 @@ func NewAddrCmd(name string, argsRequired int) *AddrCmd {
 func (cmd *AddrCmd) Execute(config *config.Config, args []string) {
 	client := NewClient(config.Client.Host, config.Client.Port)
 
-	go client.ReadSocket()
+	go client.ReadSocketLoop()
 
-	writer, err := client.Conn.NextWriter(websocket.BinaryMessage)
-	if err != nil {
-		panic(err)
-	}
-
-	request.NewSelfAddressRequest().Send(writer)
+	writer := client.GetBinaryWriter()
+	request.NewSelfAddressRequest(writer).Send()
 	writer.Close()
 }
 
