@@ -49,12 +49,15 @@ func (m *SendRequest) Send() {
 
 	if m.path != "" {
 		var payload PayloadWriter = NewFilePayloadW(m.path)
+		fmt.Println("Wrote Payload(file) length:", payload.Length())
 		m.WSPacketWriter.WriteUint64(payload.Length()) // 8 байт
 		payload.WriteTo(m.WSPacketWriter)              // M байт
 	} else {
 		var payload PayloadWriter = NewMessagePayloadW(m.text)
-		fmt.Println("Payload length:", payload.Length())
+		fmt.Println("Wrote Payload(message) length:", payload.Length())
 		m.WSPacketWriter.WriteUint64(payload.Length()) // 8 байт
 		payload.WriteTo(m.WSPacketWriter)              // M байт
 	}
+
+	fmt.Println("Wrote Packet:", m.WSPacketWriter.CurrentPacket)
 }

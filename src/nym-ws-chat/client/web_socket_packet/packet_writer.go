@@ -14,6 +14,8 @@ import (
 type WSPacketWriter struct {
 	Type   int
 	writer io.WriteCloser
+
+	CurrentPacket []byte
 }
 
 func NewWSPacketWriter(msgType int, writer io.WriteCloser) *WSPacketWriter {
@@ -31,6 +33,7 @@ func (p *WSPacketWriter) Write(buf []byte) {
 		}
 		panic(err)
 	}
+	p.CurrentPacket = append(p.CurrentPacket, buf...)
 }
 
 func (p *WSPacketWriter) WriteByte(b ...byte) {
@@ -56,9 +59,7 @@ func (p *WSPacketWriter) WriteString(s string) {
 }
 
 func (p *WSPacketWriter) WriteNymAddress(address string) {
-	fmt.Println("Address:", address)
 	addrBytes := nym_util.NymAddressToBytes(address)
-	fmt.Println("Address:", addrBytes[:])
 	p.Write(addrBytes[:])
 }
 

@@ -50,6 +50,13 @@ func (r *ReceiveResponse) Parse() {
 	// Читаем флаг полезной нагрузки
 	payloadSig := r.WSPacketReader.ReadByte()
 
+	if r.payloadLength > 400*1024*1024 { // 400 MiB
+		fmt.Println("/Incorrect packet length:", r.payloadLength/1024/1024, "MiB (Max 400 MiB)")
+		fmt.Println("\\Read Packet:", r.WSPacketReader.CurrentPacket)
+		return
+	}
+	fmt.Println("Read Packet:", r.WSPacketReader.CurrentPacket)
+
 	// Создаём объект полезной нагрузки
 	// |                     payload(размером M)                  |
 	// Message
@@ -60,11 +67,13 @@ func (r *ReceiveResponse) Parse() {
 	// |  1 байт |         8 байт      |   N байт  | M-1-8-N байт |
 	switch payloadSig {
 	case MessagePayloadType:
+		fmt.Printf("NewMessagePayloadR(%d)\n", r.payloadLength)
 		r.Payload = NewMessagePayloadR(r.payloadLength)
 	case FilePayloadType:
+		fmt.Printf("NewFilePayloadR(%d)\n", r.payloadLength)
 		r.Payload = NewFilePayloadR(r.payloadLength)
 	default:
-		fmt.Fprintf(os.Stderr, "Тип (0x%0x) полезной нагрузки не распознан", payloadSig)
+		fmt.Fprintf(os.Stderr, "Тип (payloadSig=0x%02x) полезной нагрузки не распознан\n", payloadSig)
 		return
 	}
 
@@ -79,6 +88,8 @@ func (r *ReceiveResponse) String() string {
 		sb.WriteString(fmt.Sprintf("Surb: %s\n", base58.Encode(r.Surb)))
 	}
 	sb.WriteString(fmt.Sprintf("PayloadLength: %d\n", r.payloadLength))
-	sb.WriteString(fmt.Sprintf("Payload: %s", r.Payload.String()))
+	if r.Payload != nil {
+		sb.WriteString(fmt.Sprintf("Payload: %s", r.Payload.String()))
+	}
 	return sb.String()
 }

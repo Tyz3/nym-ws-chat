@@ -14,6 +14,8 @@ import (
 type WSPacketReader struct {
 	Type   int
 	reader io.Reader
+
+	CurrentPacket []byte
 }
 
 func NewWSPacketReader(msgType int, reader io.Reader) *WSPacketReader {
@@ -31,6 +33,7 @@ func (p *WSPacketReader) Read(buf []byte) {
 		}
 		panic(err)
 	}
+	p.CurrentPacket = append(p.CurrentPacket, buf...)
 }
 
 func (p *WSPacketReader) ReadByte() byte {

@@ -62,14 +62,15 @@ func (c *Client) GetBinaryWriter() *WSPacketWriter {
 func (c *Client) ReadSocketLoop() {
 	for !c.Closed {
 		messageType, reader, err := c.conn.NextReader()
-		c.Benchmark.N--
 		if err != nil {
 			fmt.Println(err)
+			c.Benchmark.N--
 			continue
 		}
 
 		if messageType == -1 {
 			fmt.Println("WebSocket closed externaly")
+			c.Benchmark.N--
 			return
 		}
 
@@ -77,6 +78,7 @@ func (c *Client) ReadSocketLoop() {
 		packet := NewWSPacketReader(messageType, reader)
 		if packet == nil {
 			fmt.Println("WSPacketReader is nil")
+			c.Benchmark.N--
 			continue
 		}
 
@@ -86,6 +88,7 @@ func (c *Client) ReadSocketLoop() {
 		// Проверка нужного типа сообщения (TextMessage или BinaryMessage)
 		if !packet.IsValid() {
 			fmt.Println("Принятый тип сообщения не поддерживается, сообщение отброшено")
+			c.Benchmark.N--
 			continue
 		}
 
@@ -102,9 +105,10 @@ func (c *Client) ReadSocketLoop() {
 			}
 
 			resp.Parse()
-			fmt.Println(resp.String())
+			//fmt.Println(resp.String())
 		case websocket.TextMessage:
 			fmt.Println("Поддержка TextMessage не реализована")
 		}
+		c.Benchmark.N--
 	}
 }
