@@ -37,7 +37,7 @@ func NewFilePayloadW(path string) *FilePayload {
 	}
 
 	p.Info = info
-	p.payload.Length = uint64(info.Size()) + uint64(len(info.Name())) + 1 + 8
+	p.payload.Length = uint64(info.Size()) + uint64(len(info.Name())) + 1 + 2
 
 	return p
 }
@@ -58,7 +58,7 @@ func (p *FilePayload) ReadFrom(reader *WSPacketReader) {
 	p.Path = file.Name()
 
 	// Копируем данные из потока в файл
-	written, err := io.CopyN(file, reader.Reader(), int64(p.payload.Length-1-8-fileNameLength))
+	written, err := io.CopyN(file, reader.Reader(), int64(p.payload.Length-1-2-fileNameLength))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Не удалось записать данные в файл %s, written = %d, err = %s\n", fileName, written, err.Error())
 		return
@@ -82,7 +82,7 @@ func (p *FilePayload) WriteTo(writer *WSPacketWriter) {
 	fileName := p.Info.Name()
 
 	writer.WriteByte(p.Sig)
-	writer.WriteUint64(uint64(len(fileName))) // 8 байт
+	writer.WriteUint16(uint16(len(fileName))) // 2 байта
 	writer.WriteString(fileName)              // N байт
 
 	file, err := os.Open(p.Path)

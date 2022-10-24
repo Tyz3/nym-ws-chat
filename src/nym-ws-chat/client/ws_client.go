@@ -105,7 +105,7 @@ func (c *Client) ReadSocketLoop() {
 			}
 
 			resp.Parse()
-			//fmt.Println(resp.String())
+			fmt.Println(resp.String())
 		case websocket.TextMessage:
 			fmt.Println("Поддержка TextMessage не реализована")
 		}

@@ -64,7 +64,7 @@ func (r *ReceiveResponse) Parse() {
 	// |  1 байт |                    M-1 байт                    |
 	// File
 	// |   sig   | file-name-length(N) | file-name | file-content |
-	// |  1 байт |         8 байт      |   N байт  | M-1-8-N байт |
+	// |  1 байт |         1 байт      |   N байт  |  M-N-2 байт  |
 	switch payloadSig {
 	case MessagePayloadType:
 		fmt.Printf("NewMessagePayloadR(%d)\n", r.payloadLength)

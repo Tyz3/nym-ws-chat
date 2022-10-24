@@ -62,7 +62,7 @@ func (cmd *BenchmarkCmd) Execute(config *config.Config, args []string) {
 	client.Benchmark.N = benchCount
 	for i := 0; i < benchCount; i++ {
 		writer := client.GetBinaryWriter()
-		request.NewSendRequest(writer, false, contact.Address).SetMessage(text).Send()
+		request.NewSendRequest(writer, true, contact.Address).SetMessage(text).Send()
 		writer.Close()
 	}
 

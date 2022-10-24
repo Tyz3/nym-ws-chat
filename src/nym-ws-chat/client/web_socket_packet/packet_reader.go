@@ -50,6 +50,13 @@ func (p *WSPacketReader) ReadUint64() uint64 {
 	return binary.BigEndian.Uint64(buf)
 }
 
+func (p *WSPacketReader) ReadUint16() uint16 {
+	buf := make([]byte, 2)
+	p.Read(buf)
+
+	return binary.BigEndian.Uint16(buf)
+}
+
 func (p *WSPacketReader) ReadN(n uint64) []byte {
 	buf := make([]byte, n)
 	p.Read(buf)

@@ -46,6 +46,12 @@ func (p *WSPacketWriter) WriteUint64(num uint64) {
 	p.Write(buf)
 }
 
+func (p *WSPacketWriter) WriteUint16(num uint16) {
+	buf := make([]byte, 2)
+	binary.BigEndian.PutUint16(buf, num)
+	p.Write(buf)
+}
+
 func (p *WSPacketWriter) WriteFlag(flag bool) {
 	if flag {
 		p.Write([]byte{0x01})
