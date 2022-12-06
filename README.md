@@ -4,6 +4,7 @@
 - [x] **Contact list** (addcontact,delcontact,list)
 - [ ] Update the interaction protocol with the nym-client (from version 1.0.2 to 1.1.1)
 - [ ] GUI for easy experience
+- [ ] Proxy support
 - [ ] nym-client integration inside the app, for easy launch on any OS
 
 # Inernal protocol
