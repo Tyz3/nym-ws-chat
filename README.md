@@ -1,3 +1,5 @@
+Secure chat based on https://nymtech.net/
+
 # Checklist (TODO)
 - [x] **Configuration file** (config.yaml)
 - [x] **Sending/Reading/Replying messages and files** (send,sendf,listen,reply,replyf)
