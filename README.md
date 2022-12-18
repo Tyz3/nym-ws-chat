@@ -4,7 +4,7 @@ Secure chat based on https://nymtech.net/
 - [x] **Configuration file** (config.yaml)
 - [x] **Sending/Reading/Replying messages and files** (send,sendf,listen,reply,replyf)
 - [x] **Contact list** (addcontact,delcontact,list)
-- [ ] Update the interaction protocol with the nym-client (from version 1.0.2 to 1.1.1)
+- [ ] Update the interaction protocol with the nym-client (from version 1.0.2 to 1.1.3)
 - [ ] GUI for easy experience
 - [ ] Proxy support
 - [ ] nym-client integration inside the app, for easy launch on any OS
